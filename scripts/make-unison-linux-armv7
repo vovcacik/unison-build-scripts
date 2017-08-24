@@ -1,0 +1,42 @@
+#!/usr/bin/env sh
+
+# Builds Unison sync tool
+# Recommended hardware: scaleway.com, Paris, Baremetal C1 instance, Debian Stretch image
+
+# Config
+UNISON_VERSION=2.48.4
+MAKE_CMD="make UISTYLE=text NATIVE=true STATIC=true"
+
+# Install packages
+# - emacs package contains required `etags` executable
+sudo apt-get update
+sudo apt-get --yes install git
+sudo apt-get --yes install emacs
+sudo apt-get --yes install ocaml
+
+# Hardware check
+# For wider compatibility [1] recommends this hardware configuration:
+# - architecture: "armv7"
+# - floating-point unit: "vfpv3-d16"
+# [1]: https://wiki.debian.org/ArmHardFloatPort/VfpComparison#Endianess.2C_architecture_level.2C_CPU.2C_VFP_level
+RECOMMENDED_PLATFORM="armv7 vfpv3-d16"
+PLATFORM=`ocamlopt -help | grep -E '(farch|ffpu)' | grep -oP 'default: \K(\w|-)+' | tr '\n' ' ' | sed 's/ $/\n/g'`
+test "$PLATFORM" != "$RECOMMENDED_PLATFORM" && echo You are not using recommended platform \"$RECOMMENDED_PLATFORM\", but \"$PLATFORM\". Continue? && read
+
+# Source files
+git clone https://github.com/bcpierce00/unison.git
+cd unison
+git checkout $UNISON_VERSION
+
+# Compilation
+$MAKE_CMD
+
+# Build stats
+echo Time = `date`
+echo uname -a = `uname -a`
+echo Platform = $PLATFORM
+echo ocaml -version = `ocaml -version`
+echo Make command = $MAKE_CMD
+echo unison -version = `./src/unison -version`
+echo unison details = `file src/unison`
+echo unison-fsmonitor details = `file src/unison-fsmonitor`
